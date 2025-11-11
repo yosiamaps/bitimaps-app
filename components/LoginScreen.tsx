@@ -42,8 +42,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-            <img src="/logo.png" alt="BITIMAPS Logo" className="w-16 h-16 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-zinc-100">BITIMAPS</h1>
+            <img src="/logo.png" alt="bitimaps Logo" className="w-16 h-16 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-zinc-100">bitimaps</h1>
             <p className="text-zinc-400 mt-2">Masukkan password untuk melanjutkan</p>
         </div>
         <form 

@@ -1,6 +1,6 @@
 {
-  "short_name": "BITIMAPS",
-  "name": "BITIMAPS DEV PWA",
+  "short_name": "bitimaps",
+  "name": "bitimaps",
   "description": "A minimalist and modern application to help organize service territories for publishers, featuring lists of territories and publishers with easy navigation.",
   "icons": [
     {

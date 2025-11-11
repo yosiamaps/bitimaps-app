@@ -369,7 +369,7 @@ const TerritoryListPage: React.FC = () => {
             <SearchInput
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-// Fix: Corrected placeholder text to be more descriptive.
+              // Fix: Corrected placeholder text to be more descriptive.
               placeholder="Cari daerah atau KDL..."
             />
           </div>

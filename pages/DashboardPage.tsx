@@ -20,8 +20,9 @@ interface DonutChartProps {
 }
 
 const TerritoryStatusChart: React.FC<DonutChartProps> = ({ data, colors }) => {
-    // Fix: `Object.values` may return `unknown[]`. Cast `value` to `number` to perform addition.
-    const total = Object.values(data).reduce((sum, value) => sum + (value as number), 0);
+    // Fix: Operator '+' cannot be applied to types 'unknown' and 'number'.
+    // Explicitly convert value to a number to prevent type errors in reduce.
+    const total = Object.values(data).reduce((sum, value) => sum + Number(value), 0);
     if (total === 0) return <p className="text-zinc-500 text-center py-8">No data available</p>;
 
     const radius = 40;
@@ -30,8 +31,8 @@ const TerritoryStatusChart: React.FC<DonutChartProps> = ({ data, colors }) => {
 
     const segments = (Object.keys(data) as TerritoryStatus[]).map(key => {
         const value = data[key];
-        // Fix: Cast `value` to `number` to perform the arithmetic operation, as its type may be inferred broadly.
-        const percentage = ((value as number) / total) * 100;
+        // Fix: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+        const percentage = (Number(value) / total) * 100;
         const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
         const segment = {
             key,
@@ -173,8 +174,9 @@ const DashboardPage: React.FC = () => {
     };
   }, [territories, assignments, publishers]);
 
-  // Fix: `Object.values` may return `unknown[]`. Cast `count` to `number` to perform addition.
-  const totalKdl = Object.values(stats.kdlDistribution).reduce((sum, count) => sum + (count as number), 0);
+  // Fix: Operator '+' cannot be applied to types 'unknown' and 'number'.
+  // Explicitly convert count to a number to prevent type errors in reduce.
+  const totalKdl = Object.values(stats.kdlDistribution).reduce((sum, count) => sum + Number(count), 0);
   const statusColors = {
       [TerritoryStatus.Completed]: '#84cc16', // lime-500
       [TerritoryStatus.InProgress]: '#f59e0b', // yellow-500
@@ -205,8 +207,8 @@ const DashboardPage: React.FC = () => {
                   <span className="text-zinc-400">{count} Daerah</span>
                 </div>
                 <div className="w-full bg-zinc-800 rounded-full h-2.5">
-                  {/* Fix: `Object.entries` may return `[string, unknown][]`. Cast `count` to `number` to perform the arithmetic operation. */}
-                  <div className="bg-lime-500 h-2.5 rounded-full" style={{ width: `${((count as number) / (totalKdl || 1)) * 100}%` }}></div>
+                  {/* Fix: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type. */}
+                  <div className="bg-lime-500 h-2.5 rounded-full" style={{ width: `${(Number(count) / (totalKdl || 1)) * 100}%` }}></div>
                 </div>
               </div>
             ))}
