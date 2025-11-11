@@ -3,8 +3,6 @@ import { TerritoryWithDetails, TerritoryStatus } from '../types';
 import { MapPinIcon } from './icons/MapPinIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { EditIcon } from './icons/EditIcon';
-import { CheckCircleIcon } from './icons/CheckCircleIcon';
-import { ShareIcon } from './icons/ShareIcon';
 import { UserIcon } from './icons/UserIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
 import { ClipboardIcon } from './icons/ClipboardIcon';
