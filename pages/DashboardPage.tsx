@@ -20,9 +20,7 @@ interface DonutChartProps {
 }
 
 const TerritoryStatusChart: React.FC<DonutChartProps> = ({ data, colors }) => {
-    // Fix: Operator '+' cannot be applied to types 'unknown' and 'number'.
-    // Cast Object.values to number[] to ensure correct type for reduce operation.
-    const total = (Object.values(data) as number[]).reduce((sum, value) => sum + value, 0);
+    const total = (Object.values(data) as number[]).reduce((sum, value) => Number(sum) + Number(value), 0);
     if (total === 0) return <p className="text-zinc-500 text-center py-8">No data available</p>;
 
     const radius = 40;
@@ -31,9 +29,7 @@ const TerritoryStatusChart: React.FC<DonutChartProps> = ({ data, colors }) => {
 
     const segments = (Object.keys(data) as TerritoryStatus[]).map(key => {
         const value = data[key];
-        // Fix: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
-        // The value from `data[key]` is already a number, and `total` is fixed, so no cast is needed.
-        const percentage = (value / total) * 100;
+        const percentage = (Number(value) / total) * 100;
         const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
         const segment = {
             key,
@@ -129,7 +125,6 @@ const DashboardPage: React.FC = () => {
     const kdlDistribution: { [key: string]: number } = {};
     const activities: Activity[] = [];
     
-    // Explicitly type Maps to prevent values being inferred as `unknown`.
     const territoryMap = new Map<number, Territory>(territories.map(t => [t.id, t]));
     const publisherMap = new Map<number, string>(publishers.map(p => [p.id, p.name]));
 
@@ -175,9 +170,7 @@ const DashboardPage: React.FC = () => {
     };
   }, [territories, assignments, publishers]);
 
-  // Fix: Operator '+' cannot be applied to types 'unknown' and 'number'.
-  // Cast Object.values to number[] to ensure correct type for reduce operation.
-  const totalKdl = (Object.values(stats.kdlDistribution) as number[]).reduce((sum, count) => sum + count, 0);
+  const totalKdl = (Object.values(stats.kdlDistribution) as number[]).reduce((sum, count) => Number(sum) + Number(count), 0);
   const statusColors = {
       [TerritoryStatus.Completed]: '#84cc16', // lime-500
       [TerritoryStatus.InProgress]: '#f59e0b', // yellow-500
@@ -201,16 +194,14 @@ const DashboardPage: React.FC = () => {
         <div className="bg-zinc-900 p-6 rounded-2xl">
           <h2 className="font-semibold text-zinc-100 mb-4">Daerah KDL</h2>
           <div className="space-y-4">
-            {Object.entries(stats.kdlDistribution).map(([kdl, count]: [string, number]) => (
+            {Object.entries(stats.kdlDistribution).map(([kdl, count]) => (
               <div key={kdl}>
                 <div className="flex justify-between items-center text-sm mb-1">
                   <span className="font-medium text-zinc-300">{kdl}</span>
-                  <span className="text-zinc-400">{count} Daerah</span>
+                  <span className="text-zinc-400">{Number(count)} Daerah</span>
                 </div>
                 <div className="w-full bg-zinc-800 rounded-full h-2.5">
-                  {/* Fix: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type. */}
-                  {/* Explicitly typing `count` as a number in the map function signature makes casting unnecessary here. */}
-                  <div className="bg-lime-500 h-2.5 rounded-full" style={{ width: `${(count / (totalKdl || 1)) * 100}%` }}></div>
+                  <div className="bg-lime-500 h-2.5 rounded-full" style={{ width: `${(Number(count) / (totalKdl || 1)) * 100}%` }}></div>
                 </div>
               </div>
             ))}
