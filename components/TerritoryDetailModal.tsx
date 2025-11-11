@@ -166,14 +166,13 @@ const TerritoryDetailModal: React.FC<TerritoryDetailModalProps> = ({ territory, 
                 {territory.gmaps_link && (
                    <button 
                       onClick={handleShare} 
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                      className={`w-full text-center px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
                           copyStatus === 'copied' 
                           ? 'text-lime-400 bg-lime-500/10' 
                           : 'text-zinc-300 bg-zinc-800 hover:bg-zinc-700'
                       }`}
                       disabled={copyStatus === 'copied'}
                    >
-                      <ShareIcon className="w-4 h-4" />
                       {copyStatus === 'copied' ? 'Link Disalin!' : 'Bagikan Link'}
                    </button>
                 )}
@@ -186,14 +185,13 @@ const TerritoryDetailModal: React.FC<TerritoryDetailModalProps> = ({ territory, 
                   {territory.gmaps_link && (
                      <button 
                         onClick={handleShare} 
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                        className={`flex-1 text-center px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
                             copyStatus === 'copied' 
                             ? 'text-lime-400 bg-lime-500/10' 
                             : 'text-zinc-300 bg-zinc-800 hover:bg-zinc-700'
                         }`}
                         disabled={copyStatus === 'copied'}
                      >
-                        <ShareIcon className="w-4 h-4" />
                         {copyStatus === 'copied' ? 'Link Disalin!' : 'Bagikan Link'}
                      </button>
                   )}
@@ -203,8 +201,7 @@ const TerritoryDetailModal: React.FC<TerritoryDetailModalProps> = ({ territory, 
                     </button>
                   )}
                    {territory.status === TerritoryStatus.InProgress && (
-                    <button onClick={() => onComplete(territory)} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold text-zinc-900 bg-lime-400 hover:bg-lime-300 transition-colors">
-                      <CheckCircleIcon className="w-5 h-5" />
+                    <button onClick={() => onComplete(territory)} className="flex-1 text-center px-4 py-3 rounded-lg text-sm font-semibold text-zinc-900 bg-lime-400 hover:bg-lime-300 transition-colors">
                       Selesaikan
                     </button>
                   )}
