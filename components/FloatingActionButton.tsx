@@ -1,0 +1,20 @@
+import React from 'react';
+import { PlusIcon } from './icons/PlusIcon';
+
+interface FloatingActionButtonProps {
+  onClick: () => void;
+}
+
+const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onClick }) => {
+  return (
+    <button
+      onClick={onClick}
+      className="fixed bottom-24 right-6 z-40 w-16 h-16 bg-lime-400 rounded-full flex items-center justify-center text-zinc-900 shadow-2xl shadow-lime-400/30 transition-all duration-300 ease-in-out transform hover:scale-110 hover:bg-lime-300 focus:outline-none focus:ring-4 focus:ring-lime-500/50"
+      aria-label="Tambah item baru"
+    >
+      <PlusIcon className="w-8 h-8" />
+    </button>
+  );
+};
+
+export default FloatingActionButton;
