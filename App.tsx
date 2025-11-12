@@ -3,6 +3,7 @@ import FloatingNav from './components/FloatingNav';
 import TerritoryListPage from './pages/TerritoryListPage';
 import PublisherListPage from './pages/PublisherListPage';
 import DashboardPage from './pages/DashboardPage';
+import ReportsPage from './pages/ReportsPage';
 import LoginScreen from './components/LoginScreen';
 import { Page, Territory, Publisher, Assignment } from './types';
 import { supabase } from './lib/supabaseClient';
@@ -232,6 +233,10 @@ const App: React.FC = () => {
       refreshData: () => fetchData(true),
     };
 
+    // This switch statement correctly routes to the appropriate page component
+    // based on the activePage state. The 'reports' case ensures the ReportsPage
+    // is rendered when selected. The issue on the live site is likely an older
+    // version of this file where this case was missing.
     switch (activePage) {
       case 'dashboard':
         return <DashboardPage {...pageProps} />;
@@ -246,6 +251,8 @@ const App: React.FC = () => {
           onEditPublisher={handleOpenEditPublisher}
           onDeletePublisher={(publisher) => handleDeleteRequest({ type: 'publisher', data: publisher })}
         />;
+      case 'reports':
+        return <ReportsPage {...pageProps} />;
       default:
         return <DashboardPage {...pageProps} />;
     }
