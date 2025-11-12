@@ -7,15 +7,17 @@ interface TerritoryFormModalProps {
   onClose: () => void;
   onSave: (territory: Pick<Territory, 'name' | 'kdl' | 'gmaps_link'>) => void;
   onDelete?: (territory: Territory) => void;
+  isSubmitting?: boolean;
 }
 
-const TerritoryFormModal: React.FC<TerritoryFormModalProps> = ({ territoryToEdit, onClose, onSave, onDelete }) => {
+const TerritoryFormModal: React.FC<TerritoryFormModalProps> = ({ territoryToEdit, onClose, onSave, onDelete, isSubmitting = false }) => {
   const [name, setName] = useState(territoryToEdit?.name || '');
   const [kdl, setKdl] = useState(territoryToEdit?.kdl || '');
   const [gmapsLink, setGmapsLink] = useState(territoryToEdit?.gmaps_link || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     onSave({ name, kdl, gmaps_link: gmapsLink });
   };
 
@@ -37,7 +39,8 @@ const TerritoryFormModal: React.FC<TerritoryFormModalProps> = ({ territoryToEdit
               <button 
                 type="button" 
                 onClick={() => onDelete(territoryToEdit)}
-                className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all duration-200"
+                disabled={isSubmitting}
+                className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-all duration-200 disabled:opacity-50"
                 aria-label={`Hapus daerah ${territoryToEdit.name}`}
               >
                 <TrashIcon className="w-5 h-5" />
@@ -54,7 +57,8 @@ const TerritoryFormModal: React.FC<TerritoryFormModalProps> = ({ territoryToEdit
               onChange={(e) => setName(e.target.value)}
               placeholder=""
               required
-              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500"
+              disabled={isSubmitting}
+              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-70"
             />
           </div>
 
@@ -67,7 +71,8 @@ const TerritoryFormModal: React.FC<TerritoryFormModalProps> = ({ territoryToEdit
               onChange={(e) => setKdl(e.target.value)}
               placeholder=""
               required
-              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500"
+              disabled={isSubmitting}
+              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-70"
             />
           </div>
 
@@ -80,16 +85,21 @@ const TerritoryFormModal: React.FC<TerritoryFormModalProps> = ({ territoryToEdit
               onChange={(e) => setGmapsLink(e.target.value)}
               placeholder=""
               required
-              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500"
+              disabled={isSubmitting}
+              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-70"
             />
           </div>
 
           <div className="flex justify-end gap-4 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors">
+            <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors disabled:opacity-50">
               Batal
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-900 bg-lime-400 hover:bg-lime-300 transition-colors">
-              Simpan
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-900 bg-lime-400 hover:bg-lime-300 transition-colors disabled:bg-zinc-500 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Menyimpan...' : 'Simpan'}
             </button>
           </div>
         </form>

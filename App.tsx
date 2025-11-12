@@ -35,6 +35,7 @@ const App: React.FC = () => {
   const [publisherToEdit, setPublisherToEdit] = useState<Publisher | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'territory' | 'publisher', data: Territory | Publisher } | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
 
   const fetchData = useCallback(async (isRefresh: boolean = false) => {
@@ -145,34 +146,49 @@ const App: React.FC = () => {
   };
 
   const handleSaveTerritory = async (territoryData: Pick<Territory, 'name' | 'kdl' | 'gmaps_link'>) => {
-    const dataToSave = {
-      name: territoryData.name,
-      kdl: territoryData.kdl,
-      gmaps_link: territoryData.gmaps_link,
-    };
+    setIsActionLoading(true);
+    try {
+      const dataToSave = {
+        name: territoryData.name,
+        kdl: territoryData.kdl,
+        gmaps_link: territoryData.gmaps_link,
+      };
 
-    const { error } = territoryToEdit
-      ? await supabase.from('territories').update(dataToSave).eq('id', territoryToEdit.id)
-      : await supabase.from('territories').insert(dataToSave);
+      const { error } = territoryToEdit
+        ? await supabase.from('territories').update(dataToSave).eq('id', territoryToEdit.id)
+        : await supabase.from('territories').insert(dataToSave);
 
-    if (error) console.error("Error saving territory:", error.message || error);
-    else await fetchData(true);
-    setIsTerritoryFormModalOpen(false);
-    setTerritoryToEdit(null);
+      if (error) throw error;
+      
+      await fetchData(true);
+    } catch (error: any) {
+      console.error("Error saving territory:", error.message || error);
+    } finally {
+      setIsTerritoryFormModalOpen(false);
+      setTerritoryToEdit(null);
+      setIsActionLoading(false);
+    }
   };
 
   const handleSavePublisher = async (publisherData: Omit<Publisher, 'id'>) => {
-    const dataToSave = { name: publisherData.name, group: publisherData.group };
+    setIsActionLoading(true);
+    try {
+      const dataToSave = { name: publisherData.name, group: publisherData.group };
 
-    const { error } = publisherToEdit
-      ? await supabase.from('publishers').update(dataToSave).eq('id', publisherToEdit.id)
-      : await supabase.from('publishers').insert(dataToSave);
+      const { error } = publisherToEdit
+        ? await supabase.from('publishers').update(dataToSave).eq('id', publisherToEdit.id)
+        : await supabase.from('publishers').insert(dataToSave);
+      
+      if (error) throw error;
 
-    if (error) console.error("Error saving publisher:", error.message || error);
-    else await fetchData(true);
-
-    setIsPublisherFormModalOpen(false);
-    setPublisherToEdit(null);
+      await fetchData(true);
+    } catch (error: any) {
+      console.error("Error saving publisher:", error.message || error);
+    } finally {
+      setIsPublisherFormModalOpen(false);
+      setPublisherToEdit(null);
+      setIsActionLoading(false);
+    }
   };
 
   const handleDeleteRequest = (item: { type: 'territory' | 'publisher', data: Territory | Publisher }) => {
@@ -184,17 +200,22 @@ const App: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
+    setIsActionLoading(true);
 
-    const { type, data } = itemToDelete;
-    const fromTable = type === 'territory' ? 'territories' : 'publishers';
+    try {
+      const { type, data } = itemToDelete;
+      const fromTable = type === 'territory' ? 'territories' : 'publishers';
+      const { error } = await supabase.from(fromTable).delete().eq('id', data.id);
+      if (error) throw error;
 
-    const { error } = await supabase.from(fromTable).delete().eq('id', data.id);
-
-    if (error) console.error(`Error deleting ${type}:`, error.message || error);
-    else await fetchData(true);
-
-    setIsDeleteModalOpen(false);
-    setItemToDelete(null);
+      await fetchData(true);
+    } catch (error: any) {
+      console.error(`Error deleting ${itemToDelete.type}:`, error.message || error);
+    } finally {
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+      setIsActionLoading(false);
+    }
   };
 
 
@@ -256,6 +277,7 @@ const App: React.FC = () => {
       {/* Modals */}
       {isTerritoryFormModalOpen && (
         <TerritoryFormModal
+          isSubmitting={isActionLoading}
           territoryToEdit={territoryToEdit}
           onClose={() => setIsTerritoryFormModalOpen(false)}
           onSave={handleSaveTerritory}
@@ -265,6 +287,7 @@ const App: React.FC = () => {
       
       {isPublisherFormModalOpen && (
         <PublisherFormModal
+          isSubmitting={isActionLoading}
           publisherToEdit={publisherToEdit}
           onClose={() => setIsPublisherFormModalOpen(false)}
           onSave={handleSavePublisher}
@@ -273,6 +296,7 @@ const App: React.FC = () => {
 
       {isDeleteModalOpen && itemToDelete && (
         <ConfirmationModal
+          isSubmitting={isActionLoading}
           isOpen={isDeleteModalOpen}
           onClose={() => setIsDeleteModalOpen(false)}
           onConfirm={handleConfirmDelete}

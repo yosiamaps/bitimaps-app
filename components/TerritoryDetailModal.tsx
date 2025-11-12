@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TerritoryWithDetails, TerritoryStatus } from '../types';
 import { MapPinIcon } from './icons/MapPinIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
@@ -60,8 +61,8 @@ const TerritoryDetailModal: React.FC<TerritoryDetailModalProps> = ({ territory, 
       setTimeout(() => setCopyStatus('idle'), 2000);
     }
   };
-
-  return (
+  
+  const modalContent = (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-modal-fade-in"
       onClick={onClose}
@@ -195,7 +196,7 @@ const TerritoryDetailModal: React.FC<TerritoryDetailModalProps> = ({ territory, 
                   )}
                   {territory.status === TerritoryStatus.Available && (
                     <button onClick={() => onAssign(territory)} className="flex-1 text-center px-4 py-3 rounded-lg text-sm font-semibold text-zinc-900 bg-lime-400 hover:bg-lime-300 transition-colors">
-                      Tugaskan Penyiar
+                      Tugaskan
                     </button>
                   )}
                    {territory.status === TerritoryStatus.InProgress && (
@@ -210,6 +211,9 @@ const TerritoryDetailModal: React.FC<TerritoryDetailModalProps> = ({ territory, 
       </div>
     </div>
   );
+
+  const modalRoot = document.getElementById('modal-root');
+  return modalRoot ? createPortal(modalContent, modalRoot) : null;
 };
 
 export default TerritoryDetailModal;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TerritoryWithDetails, Publisher } from '../types';
 import { InfoIcon } from './icons/InfoIcon';
 
@@ -7,9 +8,10 @@ interface AssignPublisherModalProps {
   availablePublishers: Publisher[];
   onClose: () => void;
   onAssign: (assignment: { publisherId: number; startDate: string; notes?: string }) => void;
+  isSubmitting?: boolean;
 }
 
-const AssignPublisherModal: React.FC<AssignPublisherModalProps> = ({ territory, availablePublishers, onClose, onAssign }) => {
+const AssignPublisherModal: React.FC<AssignPublisherModalProps> = ({ territory, availablePublishers, onClose, onAssign, isSubmitting = false }) => {
   const [selectedPublisherId, setSelectedPublisherId] = useState<number | null>(null);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
   const [notes, setNotes] = useState('');
@@ -18,6 +20,7 @@ const AssignPublisherModal: React.FC<AssignPublisherModalProps> = ({ territory, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!selectedPublisherId) {
         alert("Silakan pilih seorang penyiar.");
         return;
@@ -29,7 +32,7 @@ const AssignPublisherModal: React.FC<AssignPublisherModalProps> = ({ territory, 
     });
   };
 
-  return (
+  const modalContent = (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-modal-fade-in"
       onClick={onClose}
@@ -66,7 +69,7 @@ const AssignPublisherModal: React.FC<AssignPublisherModalProps> = ({ territory, 
               value={selectedPublisherId ?? ''}
               onChange={(e) => setSelectedPublisherId(Number(e.target.value))}
               required
-              disabled={availablePublishers.length === 0}
+              disabled={availablePublishers.length === 0 || isSubmitting}
               className="w-full bg-zinc-800 text-zinc-200 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="" disabled>
@@ -86,7 +89,8 @@ const AssignPublisherModal: React.FC<AssignPublisherModalProps> = ({ territory, 
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               required
-              className="w-full bg-zinc-800 text-zinc-200 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500"
+              disabled={isSubmitting}
+              className="w-full bg-zinc-800 text-zinc-200 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-70"
             />
           </div>
 
@@ -98,23 +102,31 @@ const AssignPublisherModal: React.FC<AssignPublisherModalProps> = ({ territory, 
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Tambahkan catatan awal jika perlu..."
-              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500"
+              disabled={isSubmitting}
+              className="w-full bg-zinc-800 text-zinc-200 placeholder-zinc-500 rounded-lg py-2 px-3 border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-500 disabled:opacity-70"
             />
           </div>
 
 
           <div className="flex justify-end gap-4 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors">
+            <button type="button" onClick={onClose} disabled={isSubmitting} className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors disabled:opacity-50">
               Batal
             </button>
-            <button type="submit" className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-900 bg-lime-400 hover:bg-lime-300 transition-colors">
-              Tugaskan
+            <button 
+              type="submit" 
+              disabled={isSubmitting || availablePublishers.length === 0}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-900 bg-lime-400 hover:bg-lime-300 transition-colors disabled:bg-zinc-500 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Menugaskan...' : 'Tugaskan'}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
+  
+  const modalRoot = document.getElementById('modal-root');
+  return modalRoot ? createPortal(modalContent, modalRoot) : null;
 };
 
 export default AssignPublisherModal;

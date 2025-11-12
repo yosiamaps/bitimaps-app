@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Publisher, Territory, Assignment, PublisherWithDetails, PublisherHistoryEntry } from '../types';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import PublisherListItemSkeleton from '../components/PublisherListItemSkeleton';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
 import PublisherDetailModal from '../components/PublisherDetailModal';
 import SearchInput from '../components/SearchInput';
+import ListLoader from '../components/ListLoader';
 
 interface PublisherListPageProps {
   publishers: Publisher[];
@@ -14,6 +15,8 @@ interface PublisherListPageProps {
   onEditPublisher: (publisher: Publisher) => void;
   onDeletePublisher: (publisher: Publisher) => void;
 }
+
+const ITEMS_TO_LOAD = 15;
 
 // Helper to combine data for publisher details
 const combinePublisherData = (
@@ -72,7 +75,7 @@ const combinePublisherData = (
 };
 
 
-const PublisherListItem: React.FC<{ publisher: PublisherWithDetails; onClick: () => void; }> = ({ publisher, onClick }) => {
+const PublisherListItem: React.FC<{ publisher: PublisherWithDetails; onClick: () => void; }> = React.memo(({ publisher, onClick }) => {
   return (
     <li 
       onClick={onClick}
@@ -91,7 +94,7 @@ const PublisherListItem: React.FC<{ publisher: PublisherWithDetails; onClick: ()
       </div>
     </li>
   );
-};
+});
 
 
 interface FilterDropdownProps {
@@ -151,6 +154,11 @@ const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, terri
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
   const [selectedPublisher, setSelectedPublisher] = useState<PublisherWithDetails | null>(null);
+
+  // Infinite scroll state
+  const [visibleCount, setVisibleCount] = useState(ITEMS_TO_LOAD);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
   
   const publishersWithDetails = useMemo(() => {
     return combinePublisherData(publishers, territories, assignments);
@@ -179,21 +187,61 @@ const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, terri
         return 0;
     });
   }, [filteredPublishers, sortConfig]);
+
+  const displayedPublishers = useMemo(() => sortedPublishers.slice(0, visibleCount), [sortedPublishers, visibleCount]);
   
   const sortOptions: SortOption[] = [
     { key: 'name', label: 'Nama' },
     { key: 'group', label: 'KDL' },
   ];
   
-  const handleOpenEditModal = (publisher: Publisher) => {
+  // Infinite Scroll Effects
+  useEffect(() => {
+    if (isFetchingMore) {
+        setTimeout(() => {
+            setVisibleCount(prev => prev + ITEMS_TO_LOAD);
+            setIsFetchingMore(false);
+        }, 400); // Reduced delay for a snappier feel
+    }
+  }, [isFetchingMore]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+        (entries) => {
+            const target = entries[0];
+            if (target.isIntersecting && !isFetchingMore && !loading && visibleCount < sortedPublishers.length) {
+                setIsFetchingMore(true);
+            }
+        },
+        { rootMargin: '0px 0px 200px 0px' }
+    );
+
+    const currentLoaderRef = loaderRef.current;
+    if (currentLoaderRef) {
+        observer.observe(currentLoaderRef);
+    }
+
+    return () => {
+        if (currentLoaderRef) {
+            observer.unobserve(currentLoaderRef);
+        }
+    };
+  }, [loaderRef, isFetchingMore, loading, visibleCount, sortedPublishers.length]);
+
+
+  const handleOpenEditModal = useCallback((publisher: PublisherWithDetails) => {
     setSelectedPublisher(null);
     onEditPublisher(publisher);
-  };
+  }, [onEditPublisher]);
   
-  const handleOpenDeleteModal = (publisher: Publisher) => {
+  const handleOpenDeleteModal = useCallback((publisher: PublisherWithDetails) => {
     setSelectedPublisher(null);
     onDeletePublisher(publisher);
-  };
+  }, [onDeletePublisher]);
+
+  const handleSelectPublisher = useCallback((publisher: PublisherWithDetails) => {
+    setSelectedPublisher(publisher);
+  }, []);
 
   return (
     <>
@@ -217,16 +265,20 @@ const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, terri
           <ul className="space-y-4">
             {[...Array(5)].map((_, i) => <PublisherListItemSkeleton key={i} />)}
           </ul>
-        ) : sortedPublishers.length > 0 ? (
-          <ul className="space-y-4">
-            {sortedPublishers.map((publisher) => (
-              <PublisherListItem 
-                key={publisher.id} 
-                publisher={publisher}
-                onClick={() => setSelectedPublisher(publisher)}
-              />
-            ))}
-          </ul>
+        ) : displayedPublishers.length > 0 ? (
+          <>
+            <ul className="space-y-4">
+              {displayedPublishers.map((publisher) => (
+                <PublisherListItem 
+                  key={publisher.id} 
+                  publisher={publisher}
+                  onClick={() => handleSelectPublisher(publisher)}
+                />
+              ))}
+            </ul>
+            <div ref={loaderRef} />
+            {isFetchingMore && <ListLoader />}
+          </>
         ) : (
           <div className="text-center py-16">
             <p className="text-zinc-500">Tidak ada penyiar yang cocok dengan kriteria Anda.</p>

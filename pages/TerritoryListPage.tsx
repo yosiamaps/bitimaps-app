@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Territory, TerritoryStatus, Publisher, Assignment, TerritoryWithDetails } from '../types';
 import TerritoryDetailModal from '../components/TerritoryDetailModal';
@@ -8,6 +8,7 @@ import { FilterIcon } from '../components/icons/FilterIcon';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
 import TerritoryCardSkeleton from '../components/TerritoryCardSkeleton';
 import SearchInput from '../components/SearchInput';
+import ListLoader from '../components/ListLoader';
 
 interface TerritoryListPageProps {
   territories: Territory[];
@@ -17,6 +18,8 @@ interface TerritoryListPageProps {
   refreshData: () => Promise<void>;
   onEditTerritory: (territory: Territory) => void;
 }
+
+const ITEMS_TO_LOAD = 15;
 
 // Helper to combine data from separate tables into one detailed object
 const combineData = (
@@ -185,6 +188,12 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
   const [territoryToAssign, setTerritoryToAssign] = useState<TerritoryWithDetails | null>(null);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [territoryToComplete, setTerritoryToComplete] = useState<TerritoryWithDetails | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Infinite scroll state
+  const [visibleCount, setVisibleCount] = useState(ITEMS_TO_LOAD);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
   const territoriesWithDetails = useMemo(() => combineData(territories, publishers, assignments), [territories, publishers, assignments]);
 
@@ -211,6 +220,8 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
         return 0;
     });
   }, [filteredTerritories, sortConfig]);
+  
+  const displayedTerritories = useMemo(() => sortedTerritories.slice(0, visibleCount), [sortedTerritories, visibleCount]);
 
   const kdlOptions = useMemo(() => [...new Set(territories.map(t => t.kdl).filter(Boolean))], [territories]);
 
@@ -224,6 +235,40 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
     { key: 'status', label: 'Status' },
     { key: 'kdl', label: 'KDL' },
   ];
+  
+  // Infinite Scroll Effects
+  useEffect(() => {
+    if (isFetchingMore) {
+        setTimeout(() => {
+            setVisibleCount(prev => prev + ITEMS_TO_LOAD);
+            setIsFetchingMore(false);
+        }, 400); // Reduced delay for a snappier feel
+    }
+  }, [isFetchingMore]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+        (entries) => {
+            const target = entries[0];
+            if (target.isIntersecting && !isFetchingMore && !loading && visibleCount < sortedTerritories.length) {
+                setIsFetchingMore(true);
+            }
+        },
+        { rootMargin: '0px 0px 200px 0px' }
+    );
+
+    const currentLoaderRef = loaderRef.current;
+    if (currentLoaderRef) {
+        observer.observe(currentLoaderRef);
+    }
+
+    return () => {
+        if (currentLoaderRef) {
+            observer.unobserve(currentLoaderRef);
+        }
+    };
+  }, [loaderRef, isFetchingMore, loading, visibleCount, sortedTerritories.length]);
+
 
   // --- Handlers ---
   const handleOpenEditModal = (territory: TerritoryWithDetails) => {
@@ -245,53 +290,64 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
 
   const handleAssignPublisher = async (assignment: { publisherId: number; startDate: string; notes?: string }) => {
     if (!territoryToAssign) return;
+    setIsSubmitting(true);
 
-    // 1. Create new assignment
-    const { error: assignError } = await supabase.from('assignments').insert({
-        territory_id: territoryToAssign.id,
-        publisher_id: assignment.publisherId,
-        start_date: assignment.startDate,
-        notes: assignment.notes,
-    });
-    if (assignError) { console.error("Error creating assignment:", assignError.message || assignError); return; }
+    try {
+      const { error: assignError } = await supabase.from('assignments').insert({
+          territory_id: territoryToAssign.id,
+          publisher_id: assignment.publisherId,
+          start_date: assignment.startDate,
+          notes: assignment.notes,
+      });
+      if (assignError) throw assignError;
 
-    // 2. Update territory status
-    const { error: updateError } = await supabase.from('territories').update({ status: TerritoryStatus.InProgress }).eq('id', territoryToAssign.id);
-    if (updateError) { console.error("Error updating territory status:", updateError.message || updateError); }
-    
-    await refreshData();
-    setIsAssignModalOpen(false);
+      const { error: updateError } = await supabase.from('territories').update({ status: TerritoryStatus.InProgress }).eq('id', territoryToAssign.id);
+      if (updateError) throw updateError;
+      
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error assigning publisher:", error.message || error);
+    } finally {
+      setIsAssignModalOpen(false);
+      setTerritoryToAssign(null);
+      setIsSubmitting(false);
+    }
   };
 
   const handleCompleteAssignment = async (completion: { completionDate: string; notes?: string }) => {
     if (!territoryToComplete) return;
-
-    // 1. Find the current open assignment
-    const { data: currentAssignment, error: findError } = await supabase
-        .from('assignments')
-        .select('id')
-        .eq('territory_id', territoryToComplete.id)
-        .is('completion_date', null)
-        .single();
+    setIsSubmitting(true);
     
-    if (findError || !currentAssignment) { console.error("Could not find open assignment to complete", findError?.message || findError); return; }
+    try {
+      const { data: currentAssignment, error: findError } = await supabase
+          .from('assignments')
+          .select('id')
+          .eq('territory_id', territoryToComplete.id)
+          .is('completion_date', null)
+          .single();
+      
+      if (findError || !currentAssignment) throw new Error("Could not find open assignment to complete");
 
-    // 2. Update the assignment
-    const { error: updateAssignError } = await supabase
-        .from('assignments')
-        .update({ completion_date: completion.completionDate, notes: completion.notes })
-        .eq('id', currentAssignment.id);
-    if (updateAssignError) { console.error("Error updating assignment:", updateAssignError.message || updateAssignError); return; }
+      const { error: updateAssignError } = await supabase
+          .from('assignments')
+          .update({ completion_date: completion.completionDate, notes: completion.notes })
+          .eq('id', currentAssignment.id);
+      if (updateAssignError) throw updateAssignError;
 
-    // 3. Update territory status
-    const { error: updateTerritoryError } = await supabase
-        .from('territories')
-        .update({ status: TerritoryStatus.Completed })
-        .eq('id', territoryToComplete.id);
-    if (updateTerritoryError) { console.error("Error updating territory status:", updateTerritoryError.message || updateTerritoryError); }
+      const { error: updateTerritoryError } = await supabase
+          .from('territories')
+          .update({ status: TerritoryStatus.Completed })
+          .eq('id', territoryToComplete.id);
+      if (updateTerritoryError) throw updateTerritoryError;
 
-    await refreshData();
-    setIsCompleteModalOpen(false);
+      await refreshData();
+    } catch (error: any) {
+      console.error("Error completing assignment:", error.message || error);
+    } finally {
+      setIsCompleteModalOpen(false);
+      setTerritoryToComplete(null);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -318,11 +374,13 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
           <div className="space-y-4 max-w-3xl mx-auto">
             {[...Array(5)].map((_, i) => <TerritoryCardSkeleton key={i} />)}
           </div>
-        ) : sortedTerritories.length > 0 ? (
+        ) : displayedTerritories.length > 0 ? (
           <div className="space-y-4 max-w-3xl mx-auto">
-            {sortedTerritories.map((territory) => (
+            {displayedTerritories.map((territory) => (
               <TerritoryCard key={territory.id} territory={territory} onClick={() => setSelectedTerritory(territory)} />
             ))}
+            <div ref={loaderRef} />
+            {isFetchingMore && <ListLoader />}
           </div>
         ) : (
           <div className="text-center py-16">
@@ -343,6 +401,7 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
 
       {isAssignModalOpen && territoryToAssign && (
         <AssignPublisherModal
+          isSubmitting={isSubmitting}
           territory={territoryToAssign}
           availablePublishers={availablePublishers}
           onClose={() => setIsAssignModalOpen(false)}
@@ -352,6 +411,7 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
 
       {isCompleteModalOpen && territoryToComplete && (
         <CompleteAssignmentModal
+            isSubmitting={isSubmitting}
             territory={territoryToComplete}
             onClose={() => setIsCompleteModalOpen(false)}
             onComplete={handleCompleteAssignment}

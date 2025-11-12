@@ -6,9 +6,10 @@ interface ConfirmationModalProps {
   onConfirm: () => void;
   title: string;
   message: string;
+  isSubmitting?: boolean;
 }
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
+const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, onConfirm, title, message, isSubmitting = false }) => {
   if (!isOpen) return null;
 
   return (
@@ -27,17 +28,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
         <div className="flex justify-center gap-4 mt-8">
             <button 
                 type="button" 
-                onClick={onClose} 
-                className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors disabled:opacity-50"
             >
               Batal
             </button>
             <button 
                 type="button" 
-                onClick={onConfirm} 
-                className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-500 transition-colors"
+                onClick={onConfirm}
+                disabled={isSubmitting}
+                className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-500 transition-colors disabled:bg-red-800 disabled:cursor-not-allowed"
             >
-              Hapus
+              {isSubmitting ? 'Menghapus...' : 'Hapus'}
             </button>
         </div>
       </div>

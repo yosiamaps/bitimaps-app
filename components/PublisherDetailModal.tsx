@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { PublisherWithDetails, Publisher } from '../types';
+import { createPortal } from 'react-dom';
+import { PublisherWithDetails } from '../types';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { MapPinIcon } from './icons/MapPinIcon';
 import { CalendarIcon } from './icons/CalendarIcon';
@@ -11,8 +12,8 @@ import { TrashIcon } from './icons/TrashIcon';
 const PublisherDetailModal: React.FC<{
   publisher: PublisherWithDetails;
   onClose: () => void;
-  onEdit: (publisher: Publisher) => void;
-  onDelete: (publisher: Publisher) => void;
+  onEdit: (publisher: PublisherWithDetails) => void;
+  onDelete: (publisher: PublisherWithDetails) => void;
 }> = ({ publisher, onClose, onEdit, onDelete }) => {
   const [showHistory, setShowHistory] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
@@ -39,7 +40,7 @@ const PublisherDetailModal: React.FC<{
     }
   };
 
-  return (
+  const modalContent = (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-modal-fade-in"
       onClick={onClose}
@@ -162,6 +163,9 @@ const PublisherDetailModal: React.FC<{
       </div>
     </div>
   );
+
+  const modalRoot = document.getElementById('modal-root');
+  return modalRoot ? createPortal(modalContent, modalRoot) : null;
 };
 
 export default PublisherDetailModal;
