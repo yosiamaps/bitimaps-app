@@ -4,6 +4,7 @@ import { MapPinIcon } from './icons/MapPinIcon';
 import { UsersIcon } from './icons/UsersIcon';
 import { DashboardIcon } from './icons/DashboardIcon';
 import { PlusIcon } from './icons/PlusIcon';
+import { BarChartIcon } from './icons/BarChartIcon';
 
 interface FloatingNavProps {
   activePage: Page;
@@ -16,43 +17,67 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ activePage, setActivePage, on
     { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
     { id: 'territories', label: 'Daerah', icon: MapPinIcon },
     { id: 'publishers', label: 'Penyiar', icon: UsersIcon },
+    { id: 'reports', label: 'Laporan', icon: BarChartIcon },
   ];
+
+  const leftItems = navItems.slice(0, 2);
+  const rightItems = navItems.slice(2);
+  
+  const isAddButtonActive = activePage === 'territories' || activePage === 'publishers';
 
   return (
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50">
-      <div className="flex items-stretch justify-center gap-2 w-full">
-        {/* Nav buttons container */}
-        <div className="bg-zinc-900/60 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/30 p-1.5 flex items-center justify-center space-x-1 flex-grow">
-          {navItems.map((item) => {
-            const isActive = activePage === item.id;
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActivePage(item.id as Page)}
-                className={`flex flex-col items-center justify-center gap-1 w-full h-12 rounded-xl text-xs font-medium transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-lime-500 ${
-                  isActive
-                    ? 'bg-lime-400 text-zinc-900 shadow-lg shadow-lime-400/20'
-                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="bg-zinc-900/60 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/30 p-2 flex items-center justify-around w-full">
+        {leftItems.map((item) => {
+          const isActive = activePage === item.id;
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActivePage(item.id as Page)}
+              aria-label={item.label}
+              className={`flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-lime-500 ${
+                isActive
+                  ? 'bg-lime-400 text-zinc-900 shadow-lg shadow-lime-400/20'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+              }`}
+            >
+              <Icon className="w-6 h-6" />
+            </button>
+          );
+        })}
 
-        {/* Add button */}
-        {(activePage === 'territories' || activePage === 'publishers') && (
-          <button
-            onClick={onAddClick}
-            className="flex-shrink-0 w-14 bg-lime-400 rounded-2xl flex items-center justify-center text-zinc-900 shadow-2xl shadow-lime-400/30 transition-all duration-300 ease-in-out transform hover:scale-105 hover:bg-lime-300 focus:outline-none focus:ring-4 focus:ring-lime-500/50"
-            aria-label="Tambah item baru"
-          >
-            <PlusIcon className="w-7 h-7" />
-          </button>
-        )}
+        <button
+          onClick={onAddClick}
+          disabled={!isAddButtonActive}
+          aria-label="Tambah item baru"
+          className={`flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-lime-500 ${
+            isAddButtonActive
+              ? 'bg-lime-400 text-zinc-900 shadow-lg shadow-lime-400/20 hover:scale-105'
+              : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+          }`}
+        >
+          <PlusIcon className="w-7 h-7" />
+        </button>
+        
+        {rightItems.map((item) => {
+          const isActive = activePage === item.id;
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActivePage(item.id as Page)}
+              aria-label={item.label}
+              className={`flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-lime-500 ${
+                isActive
+                  ? 'bg-lime-400 text-zinc-900 shadow-lg shadow-lime-400/20'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+              }`}
+            >
+              <Icon className="w-6 h-6" />
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
