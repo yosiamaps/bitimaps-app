@@ -11,7 +11,6 @@ interface PublisherListPageProps {
   territories: Territory[];
   assignments: Assignment[];
   loading: boolean;
-  refreshData: () => Promise<void>;
   onEditPublisher: (publisher: Publisher) => void;
   onDeletePublisher: (publisher: Publisher) => void;
 }
@@ -147,7 +146,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ activeKdlFilters, setAc
   );
 }
 
-const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, territories, assignments, loading, refreshData, onEditPublisher, onDeletePublisher }) => {
+const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, territories, assignments, loading, onEditPublisher, onDeletePublisher }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
