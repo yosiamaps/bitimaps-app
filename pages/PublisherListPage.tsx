@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Publisher, Territory, Assignment, PublisherWithDetails, PublisherHistoryEntry } from '../types';
 import SearchInput from '../components/SearchInput';
@@ -9,6 +9,14 @@ import { FilterIcon } from '../components/icons/FilterIcon';
 import PublisherListItemSkeleton from '../components/PublisherListItemSkeleton';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
 import PublisherDetailModal from '../components/PublisherDetailModal';
+
+interface PublisherListPageProps {
+  publishers: Publisher[];
+  territories: Territory[];
+  assignments: Assignment[];
+  loading: boolean;
+  refreshData: () => Promise<void>;
+}
 
 // Helper to combine data for publisher details
 const combinePublisherData = (
@@ -143,12 +151,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ activeKdlFilters, setAc
   );
 }
 
-const PublisherListPage: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [publishers, setPublishers] = useState<Publisher[]>([]);
-  const [territories, setTerritories] = useState<Territory[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-
+const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, territories, assignments, loading, refreshData }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
@@ -157,32 +160,6 @@ const PublisherListPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [publisherToDelete, setPublisherToDelete] = useState<Publisher | null>(null);
   const [selectedPublisher, setSelectedPublisher] = useState<PublisherWithDetails | null>(null);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: publishersData, error: publishersError } = await supabase.from('publishers').select('*');
-      if (publishersError) throw publishersError;
-      
-      const { data: territoriesData, error: territoriesError } = await supabase.from('territories').select('*');
-      if (territoriesError) throw territoriesError;
-
-      const { data: assignmentsData, error: assignmentsError } = await supabase.from('assignments').select('*');
-      if (assignmentsError) throw assignmentsError;
-
-      setPublishers(publishersData || []);
-      setTerritories(territoriesData || []);
-      setAssignments(assignmentsData || []);
-    } catch (error: any) {
-      console.error("Error fetching data:", error.message || error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
   
   const publishersWithDetails = useMemo(() => {
     return combinePublisherData(publishers, territories, assignments);
@@ -242,7 +219,7 @@ const PublisherListPage: React.FC = () => {
       : await supabase.from('publishers').insert(publisherData);
 
     if (error) console.error("Error saving publisher:", error.message || error);
-    else await fetchData();
+    else await refreshData();
 
     setIsFormModalOpen(false);
     setPublisherToEdit(null);
@@ -252,7 +229,7 @@ const PublisherListPage: React.FC = () => {
     if (publisherToDelete) {
       const { error } = await supabase.from('publishers').delete().eq('id', publisherToDelete.id);
       if (error) console.error("Error deleting publisher:", error.message || error);
-      else await fetchData();
+      else await refreshData();
       setPublisherToDelete(null);
       setIsDeleteModalOpen(false);
     }

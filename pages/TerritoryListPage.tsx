@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Territory, TerritoryStatus, Publisher, Assignment, TerritoryWithDetails } from '../types';
 import SearchInput from '../components/SearchInput';
@@ -11,6 +11,14 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
 import TerritoryCardSkeleton from '../components/TerritoryCardSkeleton';
+
+interface TerritoryListPageProps {
+  territories: Territory[];
+  publishers: Publisher[];
+  assignments: Assignment[];
+  loading: boolean;
+  refreshData: () => Promise<void>;
+}
 
 // Helper to combine data from separate tables into one detailed object
 const combineData = (
@@ -169,12 +177,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ activeStatusFilters, se
   );
 }
 
-const TerritoryListPage: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [allTerritories, setAllTerritories] = useState<Territory[]>([]);
-  const [allPublishers, setAllPublishers] = useState<Publisher[]>([]);
-  const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
-  
+const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publishers, assignments, loading, refreshData }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusFilters, setActiveStatusFilters] = useState<TerritoryStatus[]>([]);
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
@@ -189,33 +192,7 @@ const TerritoryListPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [territoryToDelete, setTerritoryToDelete] = useState<Territory | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: territoriesData, error: territoriesError } = await supabase.from('territories').select('*');
-      if (territoriesError) throw territoriesError;
-
-      const { data: publishersData, error: publishersError } = await supabase.from('publishers').select('*');
-      if (publishersError) throw publishersError;
-
-      const { data: assignmentsData, error: assignmentsError } = await supabase.from('assignments').select('*');
-      if (assignmentsError) throw assignmentsError;
-
-      setAllTerritories(territoriesData || []);
-      setAllPublishers(publishersData || []);
-      setAllAssignments(assignmentsData || []);
-    } catch (error: any) {
-      console.error("Error fetching data:", error.message || error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const territoriesWithDetails = useMemo(() => combineData(allTerritories, allPublishers, allAssignments), [allTerritories, allPublishers, allAssignments]);
+  const territoriesWithDetails = useMemo(() => combineData(territories, publishers, assignments), [territories, publishers, assignments]);
 
   const filteredTerritories = useMemo(() => territoriesWithDetails.filter(territory => {
     const searchMatch = territory.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -241,12 +218,12 @@ const TerritoryListPage: React.FC = () => {
     });
   }, [filteredTerritories, sortConfig]);
 
-  const kdlOptions = useMemo(() => [...new Set(allTerritories.map(t => t.kdl).filter(Boolean))], [allTerritories]);
+  const kdlOptions = useMemo(() => [...new Set(territories.map(t => t.kdl).filter(Boolean))], [territories]);
 
   const availablePublishers = useMemo(() => {
-    const assignedPublisherIds = new Set(allAssignments.filter(a => !a.completion_date).map(a => a.publisher_id));
-    return allPublishers.filter(p => !assignedPublisherIds.has(p.id));
-  }, [allPublishers, allAssignments]);
+    const assignedPublisherIds = new Set(assignments.filter(a => !a.completion_date).map(a => a.publisher_id));
+    return publishers.filter(p => !assignedPublisherIds.has(p.id));
+  }, [publishers, assignments]);
   
   const sortOptions: SortOption[] = [
     { key: 'name', label: 'Nama' },
@@ -296,7 +273,7 @@ const TerritoryListPage: React.FC = () => {
       : await supabase.from('territories').insert(dataToSave);
 
     if (error) console.error("Error saving territory:", error.message || error);
-    else await fetchData();
+    else await refreshData();
     setIsFormModalOpen(false);
   };
 
@@ -304,7 +281,7 @@ const TerritoryListPage: React.FC = () => {
     if (territoryToDelete) {
       const { error } = await supabase.from('territories').delete().eq('id', territoryToDelete.id);
       if (error) console.error("Error deleting territory:", error.message || error);
-      else await fetchData();
+      else await refreshData();
       setTerritoryToDelete(null);
       setIsDeleteModalOpen(false);
     }
@@ -326,7 +303,7 @@ const TerritoryListPage: React.FC = () => {
     const { error: updateError } = await supabase.from('territories').update({ status: TerritoryStatus.InProgress }).eq('id', territoryToAssign.id);
     if (updateError) { console.error("Error updating territory status:", updateError.message || updateError); }
     
-    await fetchData();
+    await refreshData();
     setIsAssignModalOpen(false);
   };
 
@@ -357,7 +334,7 @@ const TerritoryListPage: React.FC = () => {
         .eq('id', territoryToComplete.id);
     if (updateTerritoryError) { console.error("Error updating territory status:", updateTerritoryError.message || updateTerritoryError); }
 
-    await fetchData();
+    await refreshData();
     setIsCompleteModalOpen(false);
   };
 

@@ -1,9 +1,15 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import React, { useMemo } from 'react';
 import { Territory, TerritoryStatus, Assignment, Publisher } from '../types';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 import { PlayCircleIcon } from '../components/icons/PlayCircleIcon';
 import DashboardSkeleton from '../components/DashboardSkeleton';
+
+interface DashboardPageProps {
+  territories: Territory[];
+  assignments: Assignment[];
+  publishers: Publisher[];
+  loading: boolean;
+}
 
 type Activity = {
   type: 'completed' | 'started';
@@ -84,38 +90,7 @@ const TerritoryStatusChart: React.FC<DonutChartProps> = ({ data, colors }) => {
     );
 };
 
-const DashboardPage: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [territories, setTerritories] = useState<Territory[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [publishers, setPublishers] = useState<Publisher[]>([]);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: territoriesData, error: territoriesError } = await supabase.from('territories').select('*');
-      if (territoriesError) throw territoriesError;
-
-      const { data: assignmentsData, error: assignmentsError } = await supabase.from('assignments').select('*');
-      if (assignmentsError) throw assignmentsError;
-
-      const { data: publishersData, error: publishersError } = await supabase.from('publishers').select('*');
-      if (publishersError) throw publishersError;
-
-      setTerritories(territoriesData || []);
-      setAssignments(assignmentsData || []);
-      setPublishers(publishersData || []);
-    } catch (error: any) {
-      console.error("Error fetching dashboard data:", error.message || error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
+const DashboardPage: React.FC<DashboardPageProps> = ({ territories, assignments, publishers, loading }) => {
   const { stats, recentActivities } = useMemo(() => {
     const statusCounts = {
       [TerritoryStatus.Completed]: 0,
