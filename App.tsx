@@ -65,30 +65,29 @@ const App: React.FC = () => {
     }
   }, [isAuthenticated, fetchData]);
 
-  // Pull to refresh handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
+  // Pull to refresh handlers wrapped in useCallback
+  const handleTouchStart = useCallback((e: TouchEvent) => {
     if (window.scrollY === 0) {
       setPullStart(e.touches[0].clientY);
     } else {
       setPullStart(null);
     }
-  };
+  }, []);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!pullStart || isRefreshing) return;
 
     const currentY = e.touches[0].clientY;
     let distance = currentY - pullStart;
     
     if (distance > 0) {
-      e.preventDefault(); // Prevent browser's default pull-to-refresh
-      // Apply resistance
+      e.preventDefault(); // This will now work correctly
       const newPosition = Math.min(distance / 2, PULL_THRESHOLD + 20);
       setPullPosition(newPosition);
     }
-  };
+  }, [pullStart, isRefreshing]);
   
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     if (pullStart === null) return;
 
     if (pullPosition > PULL_THRESHOLD) {
@@ -97,7 +96,20 @@ const App: React.FC = () => {
       setPullPosition(0);
     }
     setPullStart(null);
-  };
+  }, [pullStart, pullPosition, fetchData]);
+
+  // Effect to add/remove event listeners manually
+  useEffect(() => {
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false }); // Explicitly set passive to false
+    window.addEventListener('touchend', handleTouchEnd);
+    
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
 
   if (!isAuthenticated) {
@@ -128,12 +140,7 @@ const App: React.FC = () => {
   const transitionClass = pullStart === null ? 'transition-transform duration-300' : '';
 
   return (
-    <div 
-      className="min-h-screen font-sans text-zinc-200"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="min-h-screen font-sans text-zinc-200">
       <div 
         className="fixed top-0 left-0 right-0 z-0 flex justify-center pt-4 transition-opacity duration-300"
         style={{ opacity: isRefreshing || pullPosition > 0 ? 1 : 0 }}
