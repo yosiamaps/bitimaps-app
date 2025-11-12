@@ -1,10 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { supabase } from '../lib/supabaseClient';
 import { Publisher, Territory, Assignment, PublisherWithDetails, PublisherHistoryEntry } from '../types';
-import SearchInput from '../components/SearchInput';
-import FloatingActionButton from '../components/FloatingActionButton';
-import PublisherFormModal from '../components/PublisherFormModal';
-import ConfirmationModal from '../components/ConfirmationModal';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import PublisherListItemSkeleton from '../components/PublisherListItemSkeleton';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
@@ -16,6 +11,9 @@ interface PublisherListPageProps {
   assignments: Assignment[];
   loading: boolean;
   refreshData: () => Promise<void>;
+  searchQuery: string;
+  onEditPublisher: (publisher: Publisher) => void;
+  onDeletePublisher: (publisher: Publisher) => void;
 }
 
 // Helper to combine data for publisher details
@@ -64,8 +62,6 @@ const combinePublisherData = (
         }
         return null;
       })
-      // Fix: A type predicate's type must be assignable to its parameter's type.
-      // Replaced the type predicate with a standard `filter(Boolean)` and a type assertion for consistency and correctness.
       .filter(Boolean) as PublisherHistoryEntry[];
 
     return {
@@ -151,14 +147,9 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ activeKdlFilters, setAc
   );
 }
 
-const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, territories, assignments, loading, refreshData }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, territories, assignments, loading, refreshData, searchQuery, onEditPublisher, onDeletePublisher }) => {
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [publisherToEdit, setPublisherToEdit] = useState<Publisher | null>(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [publisherToDelete, setPublisherToDelete] = useState<Publisher | null>(null);
   const [selectedPublisher, setSelectedPublisher] = useState<PublisherWithDetails | null>(null);
   
   const publishersWithDetails = useMemo(() => {
@@ -193,59 +184,21 @@ const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, terri
     { key: 'name', label: 'Nama' },
     { key: 'group', label: 'KDL' },
   ];
-
-  const handleOpenAddModal = () => {
-    setPublisherToEdit(null);
-    setIsFormModalOpen(true);
-  };
   
   const handleOpenEditModal = (publisher: Publisher) => {
     setSelectedPublisher(null);
-    setPublisherToEdit(publisher);
-    setIsFormModalOpen(true);
+    onEditPublisher(publisher);
   };
   
   const handleOpenDeleteModal = (publisher: Publisher) => {
     setSelectedPublisher(null);
-    setPublisherToDelete(publisher);
-    setIsDeleteModalOpen(true);
-  };
-  
-  const handleSavePublisher = async (publisherData: Omit<Publisher, 'id'>) => {
-    const dataToSave = { name: publisherData.name, group: publisherData.group };
-
-    const { error } = publisherToEdit
-      ? await supabase.from('publishers').update(dataToSave).eq('id', publisherToEdit.id)
-      : await supabase.from('publishers').insert(publisherData);
-
-    if (error) console.error("Error saving publisher:", error.message || error);
-    else await refreshData();
-
-    setIsFormModalOpen(false);
-    setPublisherToEdit(null);
-  }
-
-  const handleConfirmDelete = async () => {
-    if (publisherToDelete) {
-      const { error } = await supabase.from('publishers').delete().eq('id', publisherToDelete.id);
-      if (error) console.error("Error deleting publisher:", error.message || error);
-      else await refreshData();
-      setPublisherToDelete(null);
-      setIsDeleteModalOpen(false);
-    }
+    onDeletePublisher(publisher);
   };
 
   return (
     <>
       <div className="container mx-auto p-4 md:p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="flex-grow">
-            <SearchInput
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari nama penyiar..."
-            />
-          </div>
+        <div className="flex items-center justify-end gap-2 mb-8">
           <SortDropdown options={sortOptions} sortConfig={sortConfig} onSortChange={setSortConfig} />
           <FilterDropdown 
                 activeKdlFilters={activeKdlFilters}
@@ -273,29 +226,6 @@ const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, terri
           </div>
         )}
       </div>
-
-      <FloatingActionButton onClick={handleOpenAddModal} />
-
-      {isFormModalOpen && (
-        <PublisherFormModal
-          publisherToEdit={publisherToEdit}
-          onClose={() => {
-            setIsFormModalOpen(false);
-            setPublisherToEdit(null);
-          }}
-          onSave={handleSavePublisher}
-        />
-      )}
-
-      {isDeleteModalOpen && publisherToDelete && (
-        <ConfirmationModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={handleConfirmDelete}
-          title="Hapus Penyiar"
-          message={`Apakah Anda yakin ingin menghapus penyiar "${publisherToDelete.name}"? Aksi ini tidak dapat dibatalkan.`}
-        />
-      )}
 
       {selectedPublisher && (
         <PublisherDetailModal

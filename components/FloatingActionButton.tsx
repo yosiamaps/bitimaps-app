@@ -1,3 +1,6 @@
+// This component is no longer used.
+// Its functionality has been integrated into the new BottomActionBar component.
+// It can be safely removed from the project.
 import React from 'react';
 import { PlusIcon } from './icons/PlusIcon';
 

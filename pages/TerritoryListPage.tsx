@@ -1,13 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Territory, TerritoryStatus, Publisher, Assignment, TerritoryWithDetails } from '../types';
-import SearchInput from '../components/SearchInput';
 import TerritoryDetailModal from '../components/TerritoryDetailModal';
-import FloatingActionButton from '../components/FloatingActionButton';
-import TerritoryFormModal from '../components/TerritoryFormModal';
 import AssignPublisherModal from '../components/AssignPublisherModal';
 import CompleteAssignmentModal from '../components/CompleteAssignmentModal';
-import ConfirmationModal from '../components/ConfirmationModal';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
 import TerritoryCardSkeleton from '../components/TerritoryCardSkeleton';
@@ -18,6 +14,8 @@ interface TerritoryListPageProps {
   assignments: Assignment[];
   loading: boolean;
   refreshData: () => Promise<void>;
+  searchQuery: string;
+  onEditTerritory: (territory: Territory) => void;
 }
 
 // Helper to combine data from separate tables into one detailed object
@@ -177,20 +175,15 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ activeStatusFilters, se
   );
 }
 
-const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publishers, assignments, loading, refreshData }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publishers, assignments, loading, refreshData, searchQuery, onEditTerritory }) => {
   const [activeStatusFilters, setActiveStatusFilters] = useState<TerritoryStatus[]>([]);
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
   const [selectedTerritory, setSelectedTerritory] = useState<TerritoryWithDetails | null>(null);
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [territoryToEdit, setTerritoryToEdit] = useState<Territory | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [territoryToAssign, setTerritoryToAssign] = useState<TerritoryWithDetails | null>(null);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [territoryToComplete, setTerritoryToComplete] = useState<TerritoryWithDetails | null>(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [territoryToDelete, setTerritoryToDelete] = useState<Territory | null>(null);
 
   const territoriesWithDetails = useMemo(() => combineData(territories, publishers, assignments), [territories, publishers, assignments]);
 
@@ -232,15 +225,9 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
   ];
 
   // --- Handlers ---
-  const handleOpenAddModal = () => {
-    setTerritoryToEdit(null);
-    setIsFormModalOpen(true);
-  };
-
   const handleOpenEditModal = (territory: TerritoryWithDetails) => {
     setSelectedTerritory(null);
-    setTerritoryToEdit(territory);
-    setIsFormModalOpen(true);
+    onEditTerritory(territory);
   };
 
   const handleOpenAssignModal = (territory: TerritoryWithDetails) => {
@@ -253,38 +240,6 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
     setSelectedTerritory(null);
     setTerritoryToComplete(territory);
     setIsCompleteModalOpen(true);
-  };
-
-  const handleDeleteRequest = (territory: Territory) => {
-    setTerritoryToDelete(territory);
-    setIsFormModalOpen(false);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleSaveTerritory = async (territoryData: Pick<Territory, 'name' | 'kdl' | 'gmaps_link'>) => {
-    const dataToSave = {
-        name: territoryData.name,
-        kdl: territoryData.kdl,
-        gmaps_link: territoryData.gmaps_link,
-    };
-
-    const { error } = territoryToEdit 
-      ? await supabase.from('territories').update(dataToSave).eq('id', territoryToEdit.id)
-      : await supabase.from('territories').insert(dataToSave);
-
-    if (error) console.error("Error saving territory:", error.message || error);
-    else await refreshData();
-    setIsFormModalOpen(false);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (territoryToDelete) {
-      const { error } = await supabase.from('territories').delete().eq('id', territoryToDelete.id);
-      if (error) console.error("Error deleting territory:", error.message || error);
-      else await refreshData();
-      setTerritoryToDelete(null);
-      setIsDeleteModalOpen(false);
-    }
   };
 
   const handleAssignPublisher = async (assignment: { publisherId: number; startDate: string; notes?: string }) => {
@@ -341,15 +296,7 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
   return (
     <>
       <div className="container mx-auto p-4 md:p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="flex-grow">
-            <SearchInput
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              // Fix: Corrected placeholder text to be more descriptive.
-              placeholder="Cari daerah atau KDL..."
-            />
-          </div>
+        <div className="flex items-center justify-end gap-2 mb-8">
           <SortDropdown options={sortOptions} sortConfig={sortConfig} onSortChange={setSortConfig} />
           <FilterDropdown 
             activeStatusFilters={activeStatusFilters} 
@@ -375,8 +322,6 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
           </div>
         )}
       </div>
-
-      <FloatingActionButton onClick={handleOpenAddModal} />
       
       {selectedTerritory && (
         <TerritoryDetailModal 
@@ -385,15 +330,6 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
           onEdit={handleOpenEditModal}
           onAssign={handleOpenAssignModal}
           onComplete={handleOpenCompleteModal}
-        />
-      )}
-
-      {isFormModalOpen && (
-        <TerritoryFormModal 
-          territoryToEdit={territoryToEdit}
-          onClose={() => setIsFormModalOpen(false)}
-          onSave={handleSaveTerritory}
-          onDelete={handleDeleteRequest}
         />
       )}
 
@@ -411,16 +347,6 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
             territory={territoryToComplete}
             onClose={() => setIsCompleteModalOpen(false)}
             onComplete={handleCompleteAssignment}
-        />
-      )}
-
-      {isDeleteModalOpen && territoryToDelete && (
-        <ConfirmationModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={handleConfirmDelete}
-          title="Hapus Daerah"
-          message={`Apakah Anda yakin ingin menghapus daerah "${territoryToDelete.name}"? Aksi ini tidak dapat dibatalkan.`}
         />
       )}
     </>
