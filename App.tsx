@@ -7,7 +7,6 @@ import LoginScreen from './components/LoginScreen';
 import { Page, Territory, Publisher, Assignment } from './types';
 import { supabase } from './lib/supabaseClient';
 import { LoaderIcon } from './components/icons/LoaderIcon';
-import BottomActionBar from './components/BottomActionBar';
 import TerritoryFormModal from './components/TerritoryFormModal';
 import PublisherFormModal from './components/PublisherFormModal';
 import ConfirmationModal from './components/ConfirmationModal';
@@ -28,9 +27,6 @@ const App: React.FC = () => {
   const [pullStart, setPullStart] = useState<number | null>(null);
   const [pullPosition, setPullPosition] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Centralized UI state
-  const [searchQuery, setSearchQuery] = useState('');
   
   // Modal States
   const [isTerritoryFormModalOpen, setIsTerritoryFormModalOpen] = useState(false);
@@ -80,11 +76,6 @@ const App: React.FC = () => {
       fetchData();
     }
   }, [isAuthenticated, fetchData]);
-  
-  // Reset search on page change
-  useEffect(() => {
-    setSearchQuery('');
-  }, [activePage]);
 
   // Pull to refresh handlers wrapped in useCallback
   const handleTouchStart = useCallback((e: TouchEvent) => {
@@ -226,13 +217,11 @@ const App: React.FC = () => {
       case 'territories':
         return <TerritoryListPage 
           {...pageProps} 
-          searchQuery={searchQuery}
           onEditTerritory={handleOpenEditTerritory}
         />;
       case 'publishers':
         return <PublisherListPage 
           {...pageProps}
-          searchQuery={searchQuery}
           onEditPublisher={handleOpenEditPublisher}
           onDeletePublisher={(publisher) => handleDeleteRequest({ type: 'publisher', data: publisher })}
         />;
@@ -258,16 +247,11 @@ const App: React.FC = () => {
         {renderPage()}
       </main>
       
-      {(activePage === 'territories' || activePage === 'publishers') && (
-        <BottomActionBar
-          searchQuery={searchQuery}
-          onSearchChange={(e) => setSearchQuery(e.target.value)}
-          onAddClick={handleAddClick}
-          placeholder={activePage === 'territories' ? 'Cari daerah atau KDL...' : 'Cari nama penyiar...'}
-        />
-      )}
-
-      <FloatingNav activePage={activePage} setActivePage={setActivePage} />
+      <FloatingNav 
+        activePage={activePage} 
+        setActivePage={setActivePage}
+        onAddClick={handleAddClick} 
+      />
 
       {/* Modals */}
       {isTerritoryFormModalOpen && (

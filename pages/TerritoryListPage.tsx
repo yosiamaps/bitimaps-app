@@ -7,6 +7,7 @@ import CompleteAssignmentModal from '../components/CompleteAssignmentModal';
 import { FilterIcon } from '../components/icons/FilterIcon';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
 import TerritoryCardSkeleton from '../components/TerritoryCardSkeleton';
+import SearchInput from '../components/SearchInput';
 
 interface TerritoryListPageProps {
   territories: Territory[];
@@ -14,7 +15,6 @@ interface TerritoryListPageProps {
   assignments: Assignment[];
   loading: boolean;
   refreshData: () => Promise<void>;
-  searchQuery: string;
   onEditTerritory: (territory: Territory) => void;
 }
 
@@ -175,7 +175,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ activeStatusFilters, se
   );
 }
 
-const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publishers, assignments, loading, refreshData, searchQuery, onEditTerritory }) => {
+const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publishers, assignments, loading, refreshData, onEditTerritory }) => {
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusFilters, setActiveStatusFilters] = useState<TerritoryStatus[]>([]);
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
@@ -296,7 +297,14 @@ const TerritoryListPage: React.FC<TerritoryListPageProps> = ({ territories, publ
   return (
     <>
       <div className="container mx-auto p-4 md:p-6">
-        <div className="flex items-center justify-end gap-2 mb-8">
+        <div className="flex items-center justify-between gap-2 mb-8">
+          <div className="flex-grow">
+            <SearchInput
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari daerah atau KDL..."
+            />
+          </div>
           <SortDropdown options={sortOptions} sortConfig={sortConfig} onSortChange={setSortConfig} />
           <FilterDropdown 
             activeStatusFilters={activeStatusFilters} 

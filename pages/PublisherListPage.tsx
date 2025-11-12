@@ -4,6 +4,7 @@ import { FilterIcon } from '../components/icons/FilterIcon';
 import PublisherListItemSkeleton from '../components/PublisherListItemSkeleton';
 import SortDropdown, { SortConfig, SortOption } from '../components/SortDropdown';
 import PublisherDetailModal from '../components/PublisherDetailModal';
+import SearchInput from '../components/SearchInput';
 
 interface PublisherListPageProps {
   publishers: Publisher[];
@@ -11,7 +12,6 @@ interface PublisherListPageProps {
   assignments: Assignment[];
   loading: boolean;
   refreshData: () => Promise<void>;
-  searchQuery: string;
   onEditPublisher: (publisher: Publisher) => void;
   onDeletePublisher: (publisher: Publisher) => void;
 }
@@ -147,7 +147,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ activeKdlFilters, setAc
   );
 }
 
-const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, territories, assignments, loading, refreshData, searchQuery, onEditPublisher, onDeletePublisher }) => {
+const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, territories, assignments, loading, refreshData, onEditPublisher, onDeletePublisher }) => {
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeKdlFilters, setActiveKdlFilters] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
   const [selectedPublisher, setSelectedPublisher] = useState<PublisherWithDetails | null>(null);
@@ -198,7 +199,14 @@ const PublisherListPage: React.FC<PublisherListPageProps> = ({ publishers, terri
   return (
     <>
       <div className="container mx-auto p-4 md:p-6">
-        <div className="flex items-center justify-end gap-2 mb-8">
+        <div className="flex items-center justify-between gap-2 mb-8">
+          <div className="flex-grow">
+            <SearchInput
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari nama penyiar..."
+            />
+          </div>
           <SortDropdown options={sortOptions} sortConfig={sortConfig} onSortChange={setSortConfig} />
           <FilterDropdown 
                 activeKdlFilters={activeKdlFilters}
