@@ -53,7 +53,7 @@ const FloatingNav: React.FC<FloatingNavProps> = ({ activePage, setActivePage, on
           aria-label="Tambah item baru"
           className={`flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950 focus:ring-lime-500 ${
             isAddButtonActive
-              ? 'bg-lime-400 text-zinc-900 shadow-lg shadow-lime-400/20 hover:scale-105'
+              ? 'bg-zinc-800 text-lime-400 shadow-lg shadow-lime-500/15 hover:scale-105 hover:bg-zinc-700'
               : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
           }`}
         >
