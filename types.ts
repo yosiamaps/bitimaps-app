@@ -1,4 +1,4 @@
-export type Page = 'dashboard' | 'territories' | 'publishers';
+export type Page = 'dashboard' | 'territories' | 'publishers' | 'reports';
 
 export enum TerritoryStatus {
   Available = 'Tersedia',
